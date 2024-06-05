@@ -5,6 +5,8 @@ import booksRoute from './routes/booksRoute.js';
 import cors from 'cors';
 
 const app = express();
+const mongo_url = process.env.MONGO_URL
+
 
 // Middleware for parsing request body
 app.use(express.json());
@@ -21,15 +23,18 @@ app.use(cors());
 //   })
 // );
 
-app.get('/', (request, response) => {
-  console.log(request);
-  return response.status(234).send('created by manoj');
-});
 
 app.use('/books', booksRoute);
 
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../backend/dist")));
+  app.get('*',(req,res)=>{
+    res.sendFile(path.resolve(__dirname, "../backend/dist/index.html"))
+  })
+}
+
 mongoose
-  .connect(mongoDBURL)
+  .connect(mongo_url)
   .then(() => {
     console.log('App connected to database');
     app.listen(PORT, () => {
