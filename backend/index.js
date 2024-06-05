@@ -1,45 +1,40 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import booksRoute from './routes/booksRoute.js';
-import cors from 'cors';
+import dotenv from "dotenv";
+dotenv.config();
+import express from "express";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+import booksRoute from "./routes/booksRoute.js";
+import ConnectMongoDb from "./config/db.js";
 
 const app = express();
-const mongo_url = process.env.MONGO_URL
-const port = process.env.PORT
+const port = process.env.PORT || 5000;
 
 // Middleware for parsing request body
 app.use(express.json());
-
-// Middleware for handling CORS POLICY
-// Option 1: Allow All Origins with Default of cors(*)
 app.use(cors());
-// Option 2: Allow Custom Origins
-// app.use(
-//   cors({
-//     origin: 'http://localhost:3000',
-//     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//     allowedHeaders: ['Content-Type'],
-//   })
-// );
 
+// Connect to MongoDB
+ConnectMongoDb().catch((error) => {
+  console.error("Error connecting to MongoDB:", error.message);
+  process.exit(1); // Exit process with failure
+});
 
-app.use('/books', booksRoute);
+// Use routes
+app.use("/books", booksRoute);
 
+// Serve static files in production
 if (process.env.NODE_ENV === "production") {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+
   app.use(express.static(path.join(__dirname, "../backend/dist")));
-  app.get('*',(req,res)=>{
-    res.sendFile(path.resolve(__dirname, "../backend/dist/index.html"))
-  })
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "../backend/dist/index.html"));
+  });
 }
 
-mongoose
-  .connect(mongo_url)
-  .then(() => {
-    console.log('App connected to database');
-    app.listen(PORT, () => {
-      console.log(`App is listening to port: ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.log(error);
-  });
+// Start the server
+app.listen(port, () => {
+  console.log(`Server running successfully on port ${port}`);
+});
